@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaSpinner, FaGithub, FaExternalLinkAlt, FaTimes, FaShieldAlt } from 'react-icons/fa';
+import { FaArrowLeft, FaSpinner, FaGithub, FaExternalLinkAlt, FaTimes, FaShieldAlt, FaHandHoldingHeart } from 'react-icons/fa';
 import { supabase } from './supabaseClient';
 import './AdminPortal.css';
 
 const AdminPortal = () => {
   const navigate = useNavigate();
   const [submissions, setSubmissions] = useState([]);
+  const [volunteers, setVolunteers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState('all'); // 'all', 'achievement', etc, or 'volunteers'
   const [selectedImage, setSelectedImage] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
@@ -17,7 +18,7 @@ const AdminPortal = () => {
 
   useEffect(() => {
     if (isLoggedIn) {
-      fetchSubmissions();
+      fetchAllData();
     } else {
       setIsLoading(false);
     }
@@ -25,7 +26,7 @@ const AdminPortal = () => {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    const correctPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123';
+    const correctPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'NSTAdmin2026';
     if (passwordInput === correctPassword) {
       setIsLoggedIn(true);
       sessionStorage.setItem('adminAuth', 'true');
@@ -37,19 +38,31 @@ const AdminPortal = () => {
 
   const [fetchError, setFetchError] = useState(null);
 
-  const fetchSubmissions = async () => {
+  const fetchAllData = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      
+      // Fetch Submissions
+      const { data: subData, error: subError } = await supabase
         .from('magazine_submissions')
         .select('*');
 
-      if (error) throw error;
-      
-      const sortedData = (data || []).sort((a, b) => (b.id || 0) - (a.id || 0));
-      setSubmissions(sortedData);
+      if (subError) throw subError;
+      setSubmissions(subData || []);
+
+      // Fetch Volunteers
+      const { data: volData, error: volError } = await supabase
+        .from('volunteers')
+        .select('*');
+
+      if (volError) {
+        console.warn('Volunteers table might not exist yet:', volError.message);
+      } else {
+        setVolunteers(volData || []);
+      }
+
     } catch (error) {
-      console.error('Error fetching submissions:', error);
+      console.error('Error fetching data:', error);
       setFetchError(error.message || 'Unknown database error');
     } finally {
       setIsLoading(false);
@@ -58,7 +71,7 @@ const AdminPortal = () => {
 
   const filteredSubmissions = filter === 'all' 
     ? submissions 
-    : submissions.filter(sub => sub.category === filter);
+    : filter === 'volunteers' ? [] : submissions.filter(sub => sub.category === filter);
 
   if (!isLoggedIn) {
     return (
@@ -103,18 +116,6 @@ const AdminPortal = () => {
     );
   }
 
-  if (fetchError) {
-    return (
-      <div className="admin-container loading-container" style={{ color: '#ef4444' }}>
-        <p>Database Error:</p>
-        <code style={{ background: '#fee2e2', padding: '1rem', borderRadius: '0.5rem' }}>{fetchError}</code>
-        <p style={{ fontSize: '1rem', color: '#64748b', marginTop: '1rem' }}>
-          Please ensure your Supabase Row Level Security (RLS) policies allow "SELECT" operations for this table!
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="admin-container">
       <header className="admin-header">
@@ -130,7 +131,10 @@ const AdminPortal = () => {
       </header>
 
       <div className="filter-section">
-        <button className={`filter-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>All</button>
+        <button className={`filter-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>All Submissions</button>
+        <button className={`filter-btn ${filter === 'volunteers' ? 'active' : ''}`} onClick={() => setFilter('volunteers')}>
+          <FaHandHoldingHeart style={{marginRight: '8px'}} /> Volunteers
+        </button>
         <button className={`filter-btn ${filter === 'achievement' ? 'active' : ''}`} onClick={() => setFilter('achievement')}>Achievements</button>
         <button className={`filter-btn ${filter === 'stories' ? 'active' : ''}`} onClick={() => setFilter('stories')}>Stories</button>
         <button className={`filter-btn ${filter === 'parents' ? 'active' : ''}`} onClick={() => setFilter('parents')}>Parents</button>
@@ -138,65 +142,95 @@ const AdminPortal = () => {
       </div>
 
       <div className="submissions-grid">
-        <AnimatePresence>
-          {filteredSubmissions.map((sub, idx) => (
-            <motion.div 
-              key={sub.id || idx}
-              className="submission-card"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              layout
-            >
-              <div className="card-header">
-                <div className="user-info">
-                  <span className="user-name">{sub.name || 'Anonymous'}</span>
-                  <div className="user-meta">
-                    <span className="campus-badge">{sub.campus}</span>
-                    <span>Year {sub.year}</span>
-                  </div>
-                  <span className="user-meta" style={{marginTop: '4px', fontSize: '0.8rem'}}>{sub.email}</span>
-                </div>
-                <span style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'capitalize' }}>
-                  {sub.category}
-                </span>
-              </div>
-
-              <div className="card-body">
-                <p className="desc-text">{sub.description}</p>
-                
-                <div className="links">
-                  {sub.project_link && (
-                    <a href={sub.project_link} target="_blank" rel="noreferrer" className="link-btn">
-                      <FaExternalLinkAlt /> Project
-                    </a>
-                  )}
-                  {sub.github_link && (
-                    <a href={sub.github_link} target="_blank" rel="noreferrer" className="link-btn">
-                      <FaGithub /> GitHub
-                    </a>
-                  )}
-                </div>
-
-                {sub.images && sub.images.length > 0 && (
-                  <div className="images-grid">
-                    {sub.images.map((img, idx) => (
-                      <img 
-                        key={idx} 
-                        src={img} 
-                        alt="submission" 
-                        className="submission-img" 
-                        onClick={() => setSelectedImage(img)}
-                      />
-                    ))}
-                  </div>
-                )}
+        <AnimatePresence mode="wait">
+          {filter === 'volunteers' ? (
+            <motion.div key="vols" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ width: '100%', gridColumn: '1/-1' }}>
+              <div className="volunteers-table-container" style={{ background: 'var(--glass-bg)', padding: '2rem', borderRadius: '1rem', border: '1px solid var(--glass-border)' }}>
+                 <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff' }}>
+                   <thead>
+                     <tr style={{ borderBottom: '1px solid var(--glass-border)', textAlign: 'left' }}>
+                       <th style={{ padding: '1rem' }}>Name</th>
+                       <th style={{ padding: '1rem' }}>Email</th>
+                       <th style={{ padding: '1rem' }}>Campus</th>
+                       <th style={{ padding: '1rem' }}>Year</th>
+                       <th style={{ padding: '1rem' }}>Contribution</th>
+                     </tr>
+                   </thead>
+                   <tbody>
+                     {volunteers.map((v, i) => (
+                       <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                         <td style={{ padding: '1rem', fontWeight: 'bold' }}>{v.name}</td>
+                         <td style={{ padding: '1rem' }}>{v.email}</td>
+                         <td style={{ padding: '1rem' }}><span className="campus-badge">{v.campus}</span></td>
+                         <td style={{ padding: '1rem' }}>Year {v.year}</td>
+                         <td style={{ padding: '1rem', fontStyle: 'italic', color: '#94a3b8' }}>{v.contribution}</td>
+                       </tr>
+                     ))}
+                   </tbody>
+                 </table>
+                 {volunteers.length === 0 && <p style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>No volunteers found.</p>}
               </div>
             </motion.div>
-          ))}
+          ) : (
+            filteredSubmissions.map((sub, idx) => (
+              <motion.div 
+                key={sub.id || idx}
+                className="submission-card"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                layout
+              >
+                <div className="card-header">
+                  <div className="user-info">
+                    <span className="user-name">{sub.name || 'Anonymous'}</span>
+                    <div className="user-meta">
+                      <span className="campus-badge">{sub.campus}</span>
+                      <span>Year {sub.year}</span>
+                    </div>
+                    <span className="user-meta" style={{marginTop: '4px', fontSize: '0.8rem'}}>{sub.email}</span>
+                  </div>
+                  <span style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'capitalize' }}>
+                    {sub.category}
+                  </span>
+                </div>
+
+                <div className="card-body">
+                  <p className="desc-text">{sub.description}</p>
+                  
+                  <div className="links">
+                    {sub.project_link && (
+                      <a href={sub.project_link} target="_blank" rel="noreferrer" className="link-btn">
+                        <FaExternalLinkAlt /> Project
+                      </a>
+                    )}
+                    {sub.github_link && (
+                      <a href={sub.github_link} target="_blank" rel="noreferrer" className="link-btn">
+                        <FaGithub /> GitHub
+                      </a>
+                    )}
+                  </div>
+
+                  {sub.images && sub.images.length > 0 && (
+                    <div className="images-grid">
+                      {sub.images.map((img, idx) => (
+                        <img 
+                          key={idx} 
+                          src={img} 
+                          alt="submission" 
+                          className="submission-img" 
+                          onClick={() => setSelectedImage(img)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ))
+          )}
         </AnimatePresence>
         
-        {filteredSubmissions.length === 0 && (
+        {filter !== 'volunteers' && filteredSubmissions.length === 0 && (
           <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: '#64748b' }}>
             No submissions found for this category.
           </div>
