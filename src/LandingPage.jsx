@@ -11,6 +11,7 @@ const LandingPage = () => {
   const [email, setEmail] = useState('');
   const [showVolunteers, setShowVolunteers] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
   const [volunteers, setVolunteers] = useState([]);
   const [isSubmittingVolunteer, setIsSubmittingVolunteer] = useState(false);
   
@@ -25,11 +26,12 @@ const LandingPage = () => {
   useEffect(() => {
     const savedEmail = localStorage.getItem('userEmail');
     const savedCampus = localStorage.getItem('userCampus');
+    fetchVolunteers();
+
     if (savedEmail && savedCampus) {
       navigate('/dashboard', { state: { campus: savedCampus, email: savedEmail } });
     }
-    fetchVolunteers();
-  }, []);
+  }, [navigate]);
 
   const fetchVolunteers = async () => {
     const { data, error } = await supabase.from('volunteers').select('*');
@@ -44,7 +46,12 @@ const LandingPage = () => {
     }
     localStorage.setItem('userEmail', email);
     localStorage.setItem('userCampus', campus);
-    navigate('/dashboard', { state: { campus, email } });
+    
+    setShowIntro(true);
+    setTimeout(() => {
+      setShowIntro(false);
+      navigate('/dashboard', { state: { campus, email } });
+    }, 1500);
   };
 
   const handleVolunteerSubmit = async (e) => {
@@ -67,13 +74,35 @@ const LandingPage = () => {
 
   return (
     <div className="landing-container">
+      <AnimatePresence>
+        {showIntro && (
+          <motion.div 
+            className="laptop-intro-overlay"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 2, filter: "blur(20px)" }}
+            transition={{ duration: 0.8 }}
+          >
+            <div className="laptop-container">
+              <div className="laptop">
+                <div className="laptop-lid">
+                  <div className="laptop-screen">
+                    <div className="laptop-logo">NST</div>
+                  </div>
+                </div>
+                <div className="laptop-base"></div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Background Tech Elements */}
       <div className="bg-shapes">
         <div className="tech-grid"></div>
         <div className="shape shape-1"></div>
         <div className="shape shape-2"></div>
         <motion.div className="floating-element" style={{ top: '20%', left: '10%' }} animate={{ y: [0, -20, 0], rotate: [0, 10, 0] }} transition={{ repeat: Infinity, duration: 6 }}>
-          <FaBook />
+          <FaLaptopCode />
         </motion.div>
         <motion.div className="floating-element" style={{ bottom: '20%', right: '15%' }} animate={{ y: [0, 30, 0], rotate: [0, -15, 0] }} transition={{ repeat: Infinity, duration: 8 }}>
           <FaLaptopCode />

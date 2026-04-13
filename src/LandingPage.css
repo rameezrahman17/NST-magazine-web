@@ -1,13 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
 
 :root {
-  --nst-blue: #003366;
-  --nst-blue-light: #2563eb;
-  --nst-glow: rgba(37, 99, 235, 0.4);
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --text-main: #ffffff;
-  --text-muted: #94a3b8;
+  --nst-blue: #0f172a;
+  --nst-blue-light: #0ea5e9;
+  --nst-glow: rgba(14, 165, 233, 0.3);
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --text-main: #f8fafc;
+  --text-muted: #cbd5e1;
 }
 
 body {
@@ -22,8 +22,8 @@ body {
 .landing-container {
   min-height: 100vh;
   position: relative;
-  background: radial-gradient(circle at top right, #1e3a8a, transparent),
-              radial-gradient(circle at bottom left, #1e1b4b, #020617);
+  background: radial-gradient(circle at top right, #0f172a, transparent),
+              radial-gradient(circle at bottom left, #020617, #020617);
   display: flex;
   flex-direction: column;
 }
@@ -51,11 +51,18 @@ body {
   top: -50%;
   left: -50%;
   background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 60px 60px;
   transform: rotateX(60deg) translateZ(-200px);
-  opacity: 0.5;
+  opacity: 0.8;
+  animation: gridMove 15s linear infinite;
+  transform-style: preserve-3d;
+}
+
+@keyframes gridMove {
+  0% { transform: rotateX(60deg) translateY(0) translateZ(-200px); }
+  100% { transform: rotateX(60deg) translateY(60px) translateZ(-200px); }
 }
 
 .shape {
@@ -71,16 +78,16 @@ body {
   background: var(--nst-blue-light);
   top: 10%;
   right: -100px;
-  opacity: 0.2;
+  opacity: 0.15;
 }
 
 .shape-2 {
   width: 300px;
   height: 300px;
-  background: #3b82f6;
+  background: #6366f1;
   bottom: 20%;
   left: -50px;
-  opacity: 0.15;
+  opacity: 0.1;
 }
 
 .floating-element {
@@ -124,6 +131,7 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
 
 .nav-links {
   display: flex;
@@ -398,4 +406,108 @@ body {
   .nav-links {
     display: none;
   }
+}
+
+/* Laptop Animation specific to transition */
+.laptop-intro-overlay {
+  position: fixed;
+  inset: 0;
+  background: #020617;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 2000px;
+}
+
+.laptop-container {
+  width: 320px;
+  height: 200px;
+  position: relative;
+  transform-style: preserve-3d;
+  animation: laptopFloatAndGrow 1.5s ease-in-out forwards;
+}
+
+@keyframes laptopFloatAndGrow {
+  /* Appear */
+  0% { transform: translateZ(-1000px) rotateX(10deg) scale(0.1); opacity: 0; }
+  15% { transform: translateZ(0px) rotateX(15deg) scale(1); opacity: 1; }
+  
+  /* Hold while opening (15% to 55%) */
+  55% { transform: translateZ(20px) rotateX(10deg) scale(1.1); opacity: 1; }
+  
+  /* High speed zoom past camera */
+  75% { transform: translateZ(600px) rotateX(0deg) scale(3.5); opacity: 1; }
+  100% { transform: translateZ(1800px) rotateX(0deg) scale(12); opacity: 0; }
+}
+
+.laptop {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  transform-style: preserve-3d;
+}
+
+.laptop-lid {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  bottom: 0;
+  transform-origin: bottom;
+  transform-style: preserve-3d;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border: 2px solid #334155;
+  border-radius: 12px 12px 0 0;
+  animation: lidOpen 0.6s 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  z-index: 2;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+}
+
+.laptop-screen {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  background: radial-gradient(circle at center, #0ea5e9, #020617);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
+}
+
+.laptop-logo {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 2rem;
+  color: #fff;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  animation: pulse 1s infinite alternate;
+}
+
+.laptop-base {
+  position: absolute;
+  width: 100%;
+  height: 120%;
+  top: 100%;
+  left: 0;
+  background: linear-gradient(180deg, #334155, #0f172a);
+  border: 2px solid #1e293b;
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  transform-origin: top;
+  transform: rotateX(-85deg);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+@keyframes lidOpen {
+  0% { transform: rotateX(0deg); }
+  100% { transform: rotateX(-115deg); }
+}
+
+@keyframes pulse {
+  from { opacity: 0.8; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
